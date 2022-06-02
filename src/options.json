@@ -1,0 +1,16 @@
+{
+    "options": [
+        {
+            "value": "16995",
+            "label": "Powell Station Outbound"
+        },
+        {
+            "value": "15417",
+            "label": "Powell Station Inbound"
+        },
+        {
+            "value": "16991",
+            "label": "Castro Station Outbound"
+        }
+    ]
+}

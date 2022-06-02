@@ -1,38 +1,86 @@
-.App {
-  text-align: center;
+#app {
+  padding: 10%;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Styling of header */
+.Header {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-content: center;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  font-size: large;
 }
 
-.App-link {
-  color: #61dafb;
+.refresh {
+  margin-left: auto;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+button,
+input[type="submit"],
+input[type="reset"] {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: inherit;
+}
+
+/* Styling of arrival rows */
+.lineIcon {
+  min-width: 3rem;
+  text-align: center;
+  /* flex-flow: row nowrap; */
+  border-radius: 1.5rem;
+  /* line-height: inherit; */
+  /* margin: 0.5rem 2rem; */
+  font-style: normal;
+  font-size: x-large;
+  font-weight: bold;
+  text-align: center;
+  padding: 0.25rem;
+  font-family: 'grapheinpro', Arial, "Helvetica Neue", Helvetica, sans-serif;
+
+  margin-left: 1rem;
+}
+
+.minsNum {
+  font-weight: 700;
+}
+
+.mins {
+  width: min(20%, 10rem);
+  font-size: 1rem;
+}
+
+.lineName {
+  margin-left: 0.7rem;
+}
+
+.direction {
+  margin-left: auto;
+}
+
+.ArrivalRow {
+  display: flex;
+  flex-direction: row;
+  /* justify-content: center; */
+  align-content: center;
+  align-items: center;
+}
+
+.ArrivalRow>* {
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.Arrivals {
+  list-style: none;
+  padding-left: 0;
+  font-size: 1rem;
+}
+
+.bold {
+  font-weight: bold;
 }
