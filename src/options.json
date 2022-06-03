@@ -11,6 +11,18 @@
         {
             "value": "16991",
             "label": "Castro Station Outbound"
+        },
+        {
+            "value": "16992",
+            "label": "Embarcadero Station Inbound"
+        },
+        {
+            "value": "17217",
+            "label": "Embarcadero Station Outbound"
+        },
+        {
+            "value": "17294",
+            "label": "California St & Davis St"
         }
     ]
 }

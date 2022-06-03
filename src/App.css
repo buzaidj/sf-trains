@@ -49,6 +49,10 @@ input[type="reset"] {
   font-weight: 700;
 }
 
+.arrivingNow {
+  font-weight: 700;
+}
+
 .mins {
   width: min(20%, 10rem);
   font-size: 1rem;
@@ -83,4 +87,39 @@ input[type="reset"] {
 
 .bold {
   font-weight: bold;
+}
+
+/** Line filtering*/
+.Filtering {
+  display: flex;
+  flex-direction: row;
+  /* justify-content: center; */
+  align-content: center;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.lineIconFilter {
+  min-width: 3rem;
+  text-align: center;
+  /* flex-flow: row nowrap; */
+  border-radius: 1rem;
+  /* line-height: inherit; */
+  /* margin: 0.5rem 2rem; */
+  font-style: normal;
+  font-size: large;
+  font-weight: bold;
+  text-align: center;
+  padding: 0.25rem;
+  font-family: 'grapheinpro', Arial, "Helvetica Neue", Helvetica, sans-serif;
+
+  margin-left: 1rem;
+}
+
+.Filtering i:hover {
+  cursor: pointer;
+}
+
+MapContainer {
+  height: 30%;
 }
