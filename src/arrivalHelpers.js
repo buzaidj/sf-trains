@@ -1,8 +1,66 @@
+import { StayPrimaryLandscape } from '@mui/icons-material';
 import './App.css';
+
+function style(backgroundColor, textColor = 'white') {
+    return {
+        'background-color': backgroundColor,
+        'color': textColor
+    }
+}
+
+function bartShorten(lineCode) {
+    return lineCode.split('-')[0]
+}
+
+export function longDirection(dir) {
+    switch (dir) {
+        case 'IB':
+            return 'Inbound';
+        case 'OB':
+            return 'Outbound';
+        case 'W':
+            return 'West';
+        case 'E':
+            return 'East';
+        case 'N':
+            return 'North';
+        case 'S':
+            return 'South';
+        default:
+            return dir;
+    }
+}
+
+
+export function lineCodeShorten(agency, lineCode) {
+    switch (agency) {
+        case 'BA':
+            return bartShorten(lineCode);
+        default:
+            return lineCode;
+    }
+}
+
 
 /** styling icons  */
 export function iconStyle(lineCode) {
     switch (lineCode) {
+        case 'Yellow-N':
+        case 'Yellow-S':
+        case 'Yellow':
+            return style('#D7D700', 'white')
+        case 'Green-N':
+        case 'Green-S':
+        case 'Green':
+            return style('#6BB557')
+        case 'Orange-N':
+        case 'Orange-S':
+        case 'Orange':
+            return style('#EEA941')
+        case 'Red-N':
+        case 'Red-S':
+        case 'Red':
+            return style('#D93832');
         case 'C':
         case 'F':
         case 'PM':

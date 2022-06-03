@@ -12,6 +12,8 @@
 }
 
 .refresh {
+  display: flex;
+  flex-direction: row;
   margin-left: auto;
 }
 
@@ -32,14 +34,14 @@ input[type="reset"] {
   min-width: 3rem;
   text-align: center;
   /* flex-flow: row nowrap; */
-  border-radius: 1.5rem;
+  border-radius: 1rem;
   /* line-height: inherit; */
   /* margin: 0.5rem 2rem; */
   font-style: normal;
   font-size: x-large;
   font-weight: bold;
   text-align: center;
-  padding: 0.25rem;
+  padding: 0.35rem;
   font-family: 'grapheinpro', Arial, "Helvetica Neue", Helvetica, sans-serif;
 
   margin-left: 1rem;
@@ -125,4 +127,19 @@ input[type="reset"] {
   margin-top: 0.5rem;
   margin-bottom: 1rem;
   border-radius: 1rem;
+}
+
+.headerIcons:hover {
+  cursor: pointer;
+}
+
+.BART {
+  margin: 0;
+  padding: 0;
+  border: none;
+  max-width: 12%;
+}
+
+.buttonHeader {
+  padding-left: 0.5rem;
 }

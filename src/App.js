@@ -1,24 +1,26 @@
 import './App.css';
-import { iconStyle } from './arrivalHelpers';
+import bart from './img/bart.svg'
+import { lineCodeShorten, iconStyle, longDirection } from './arrivalHelpers';
 import React, { Component, useState, useEffect } from 'react'
 import Select, { InputActionMeta } from 'react-select'
 import opts from './options.json'
 import RefreshIcon from '@mui/icons-material/Refresh';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-import 'leaflet/dist/leaflet.css';
-import { MapContainer } from 'react-leaflet/MapContainer';
-import { TileLayer } from 'react-leaflet/TileLayer';
-import { useMap } from 'react-leaflet/hooks';
-import { Marker, Popup } from 'react-leaflet';
-import { Icon } from 'leaflet';
-import markerIconPng from "leaflet/dist/images/marker-icon.png"
-import { height } from '@mui/system';
+import Map from './Map.js'
+import InfoDialog from './Info';
+
+import { JoinLeft, LocalConvenienceStoreOutlined } from '@mui/icons-material';
+import { FormControlUnstyledContext } from '@mui/base';
 
 const key = "80b27b9e-f65e-4c32-960a-a40a076561ba"
 const REFRESH_TIME = 120000; // 2 mins  
-const MAX_ARRIVALS = 7;
+const MAX_ARRIVALS = 100;
+
+const agency = 'BA';
 
 function toTitleCase(str) {
+  if (!str) return '';
   return str.toLowerCase().replace(/(?:^|[\s-/])\w/g, function (match) {
     return match.toUpperCase();
   });
@@ -43,24 +45,6 @@ function Mins(props) {
   }
 }
 
-function longDirection(dir) {
-  switch (dir) {
-    case 'IB':
-      return 'Inbound';
-    case 'OB':
-      return 'Outbound';
-    case 'W':
-      return 'West';
-    case 'E':
-      return 'East';
-    case 'N':
-      return 'North';
-    case 'S':
-      return 'South';
-    default:
-      return dir;
-  }
-}
 
 /** Returns a row for a given arrival with props mins 
  * (an integer), lineCode (e.g. N), lineName (e.g. Judah) 
@@ -87,11 +71,12 @@ function getExpectedTime(j) {
   return null;
 }
 
+
 function createArrivals(data) {
   return data?.ServiceDelivery.StopMonitoringDelivery.MonitoredStopVisit
     .map(x => x.MonitoredVehicleJourney)
     .map(j => Object({
-      lineCode: j.LineRef,
+      lineCode: lineCodeShorten(agency, j.LineRef),
       lineName: j.PublishedLineName,
       direction: j.DirectionRef,
       destination: j.DestinationName,
@@ -104,11 +89,21 @@ function createStops(data) {
     .map(x => Object({
       value: x['@id'],
       label: x.Name,
-      location: [x.Centroid.Location.Latitude, x.Centroid.Location.Longitude],
+      location: [parseFloat(x.Centroid.Location.Latitude), parseFloat(x.Centroid.Location.Longitude)],
       url: x.Url,
       mode: x.TransportMode
     }))
-    .filter(x => x.mode !== 'bus')
+    .filter(x => {
+      switch (agency) {
+        case 'SF':
+          return x.mode !== 'bus' && x.mode !== 'tram';
+        case 'BA':
+          return x.mode !== 'unknown' && x.value.substring(0, 6) !== 'place_';
+        default:
+          return x
+      }
+    }
+    )
 }
 
 
@@ -116,32 +111,33 @@ function toTimeStr(date) { return new Date(date).toLocaleTimeString([], { hour: 
 
 
 function App() {
-  const [stop, setStop] = useState({
-    value: '16995',
-    label: 'Powell Station Outbound'
-  });
-  const [lastUpdateTime, setUpdateTime] = useState(Date.now());
+  const [stop, setStop] = useState(null);
+  const [lastUpdateTime, setUpdateTime] = useState(null);
   const [arrivalList, setArrivals] = useState([]);
   const [filteredLines, setFilteredLines] = useState([]);
   const [stops, setStops] = useState([]);
+  const [mapCenter, setMapCenter] = useState([37.77, -122.356]);
+  const [mapZoom, setMapZoom] = useState(11);
 
   function FetchStops() {
-    fetch(`http://api.511.org/transit/stopplaces?api_key=${key}&operator_id=SF&format=json`)
+    fetch(`http://api.511.org/transit/stopplaces?api_key=${key}&operator_id=${agency}&format=json`)
       .then(res => res.json())
       .then(res => { setStops(createStops(res)) })
       .catch(error => console.log(error.message));
   }
 
   function FetchData(stop) {
-    fetch("http://api.511.org/transit/StopMonitoring?api_key=" + key + "&agency=SF&format=json&stopcode=" + stop.value)
-      .then(res => res.json())
-      .then(res => { setArrivals(createArrivals(res)) })
-      .then(setUpdateTime(Date.now()))
-      .catch(error => console.log(error.message));
+    if (stop)
+      fetch("http://api.511.org/transit/StopMonitoring?api_key=" + key + "&agency=" + agency + "&format=json&stopcode=" + stop.value)
+        .then(res => res.json())
+        .then(res => { setArrivals(createArrivals(res)) })
+        .then(() => setUpdateTime(Date.now()))
+        .then(() => setStop(stop))
+        // .then(() => setMapCenter(mapCenter))
+        .catch(error => console.log(error.message));
   }
 
   useEffect(() => {
-    setUpdateTime(Date.now());
     FetchData(stop);
     FetchStops();
 
@@ -153,25 +149,36 @@ function App() {
     return () => clearInterval(interval);
   }, [stop])
 
+  function UpcomingHeaderRow(props) {
+    if (!props.stop)
+      return <p>Select a station on the map or dropdown to get started!</p>
+    else
+      return <p>
+        Upcoming trains/buses at
+        <span className='bold'> {props.stop.label}</span>.
+        Last updated at {toTimeStr(lastUpdateTime)}.
+      </p>
+  }
 
   function HeaderRow(props) {
     return <div className='Header'>
-      <p>
-        Upcoming trains/buses at
-        <span className='bold'> {props.station}</span>.
-        Last updated at {toTimeStr(props.lastUpdateTime)}.
-      </p>
-      <button className='refresh' onClick={() => { FetchData(stop); }}><RefreshIcon></RefreshIcon></button>
+      <img src={bart} className="BART" alt="BART Logo" />
+      <UpcomingHeaderRow stop={props.stop}></UpcomingHeaderRow>
+      <div className='refresh'>
+        <InfoDialog></InfoDialog>
+        {/* <button className='buttonHeader' onClick={() => { FetchData(stop); }}><InfoOutlinedIcon></InfoOutlinedIcon></button> */}
+        <button className='buttonHeader' onMouseOver={() => { FetchData(stop); }}><RefreshIcon></RefreshIcon></button>
+      </div>
     </div>
   }
 
-
+  /** When dropdown menu input changes */
   function onChange(valueMeta, actionMeta) {
     switch (actionMeta.action) {
       case 'select-option':
-      case 'set-value':
-        setStop(valueMeta);
         FetchData(valueMeta);
+        setMapCenter(valueMeta.location);
+        setMapZoom(12);
         break;
       default:
         break;
@@ -203,46 +210,26 @@ function App() {
 
   function Filtering() {
     var lineCodes = [...new Set(arrivalList.map(x => x.lineCode))];
-    return <div className='Filtering'>
-      <p>Filter:</p>
-      {
-        lineCodes.map((x) => {
-          return <i style={filterIconStyle(x)} className='lineIconFilter' onClick={() => filterLineClick(x)}>{x}</i>;
-        }
-        )
-      }
-    </div >
-  }
-
-  function MarkerFromStop(props) {
-    return <Marker position={props.stop.location} icon={new Icon({ iconUrl: markerIconPng })}>
-      <Popup>
-        {props.stop.label} <br />
-        <button style={{ textDecoration: 'underline' }} onClick={
-          () => {
-            setStop(props.stop);
-            FetchData(props.stop);
+    if (stop)
+      return <div className='Filtering'>
+        <p>Filter:</p>
+        {
+          lineCodes.map((x) => {
+            return <i style={filterIconStyle(x)} className='lineIconFilter' onClick={() => filterLineClick(x)}>{x}</i>;
           }
-        }>Select this stop</button>
-      </Popup>
-    </Marker>
+          )
+        }
+      </div >
+    else return <div></div>
   }
 
-  function MarkersFromStops(props) {
-    var markers = [];
-    for (var stop of props.stops) {
-      markers.push(<MarkerFromStop stop={stop}></MarkerFromStop>);
-    }
-    return <div>{markers}</div>
-  }
 
 
   return (
     <div id="app">
       <header>
-        <HeaderRow station={stop.label} lastUpdateTime={lastUpdateTime}></HeaderRow>
-
-        <MapContainer className="Map" center={[37.7749, -122.4194]} zoom={14} scrollWheelZoom={false}>
+        <HeaderRow stop={stop} lastUpdateTime={lastUpdateTime}></HeaderRow>
+        {/* <MapContainer className="Map" center={mapCenter} zoom={mapZoom} scrollWheelZoom={false}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -250,8 +237,9 @@ function App() {
           <div>
             <MarkersFromStops stops={stops}></MarkersFromStops>
           </div>
-        </MapContainer>
+        </MapContainer> */}
 
+        <Map center={mapCenter} zoom={mapZoom} stops={stops} FetchData={FetchData}></Map>
         <StopSelector></StopSelector>
 
         <Filtering></Filtering>
@@ -262,6 +250,6 @@ function App() {
   );
 }
 
+
+
 export default App;
-
-
