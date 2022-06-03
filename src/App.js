@@ -108,6 +108,7 @@ function createStops(data) {
       url: x.Url,
       mode: x.TransportMode
     }))
+    .filter(x => x.mode !== 'bus')
 }
 
 

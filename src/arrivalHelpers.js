@@ -5,6 +5,8 @@ export function iconStyle(lineCode) {
     switch (lineCode) {
         case 'C':
         case 'F':
+        case 'PM':
+        case 'PH':
             return {
                 'background-color': 'rgb(180, 154, 54)',
                 'color': 'black'
