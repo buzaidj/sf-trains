@@ -4,10 +4,19 @@ import './App.css';
 export function iconStyle(lineCode) {
     switch (lineCode) {
         case 'C':
+        case 'F':
             return {
                 'background-color': 'rgb(180, 154, 54)',
                 'color': 'black'
             }
+        case 'N-OWL':
+        case 'N OWL':
+        case 'L-OWL':
+            return {
+                'background-color': 'rgb(102, 102, 102)',
+                'color': 'white'
+            }
+
         case 'KT':
             return {
                 'background-color': 'black',

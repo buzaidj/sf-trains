@@ -14,16 +14,6 @@ import { Icon } from 'leaflet';
 import markerIconPng from "leaflet/dist/images/marker-icon.png"
 import { height } from '@mui/system';
 
-
-// const arrivals =
-//   [
-//     { mins: 5, lineCode: 'N', lineName: 'Judah', direction: 'Outbound' },
-//     { mins: 7, lineCode: 'S', lineName: 'Shuttle', direction: 'Outbound' },
-//     { mins: 11, lineCode: 'M', lineName: 'Ocean View', direction: 'Outbound' },
-//     { mins: 12, lineCode: 'KT', lineName: 'KT: K Ingleside-T Third Street', direction: 'Outbound' },
-//   ]
-
-
 const key = "80b27b9e-f65e-4c32-960a-a40a076561ba"
 const REFRESH_TIME = 120000; // 2 mins  
 const MAX_ARRIVALS = 7;
@@ -34,11 +24,7 @@ function toTitleCase(str) {
   });
 }
 
-/** Retrieves the icon styling for a given line code. For instance, bus route
- * 30's style has a background color of rgb(0, 91, 149) and a text color 
- * of white
- * 
- */
+/** A list of all arriving buses/trains */
 function Arrivals(props) {
   return <ul className='Arrivals'>{props.liProps.map(
     (prop) => <li>{ArrivalRow(prop)}</li>
@@ -89,9 +75,6 @@ function ArrivalRow(props) {
 }
 
 function computeMins(expectedArrivalTime) {
-  console.log(Date.parse(expectedArrivalTime) - Date.now());
-  console.log(Date.parse(expectedArrivalTime));
-  console.log(expectedArrivalTime);
   return Math.floor(Math.abs((Date.parse(expectedArrivalTime) - Date.now()) / 1000 / 60));
 }
 
@@ -117,11 +100,13 @@ function createArrivals(data) {
 }
 
 function createStops(data) {
-  return data?.Contents.dataObjects.ScheduledStopPoint
+  return data?.Siri.ServiceDelivery.DataObjectDelivery.dataObjects.SiteFrame.stopPlaces.StopPlace
     .map(x => Object({
-      value: x.id,
+      value: x['@id'],
       label: x.Name,
-      location: [x.Location.Latitude, x.Location.Longitude]
+      location: [x.Centroid.Location.Latitude, x.Centroid.Location.Longitude],
+      url: x.Url,
+      mode: x.TransportMode
     }))
 }
 
@@ -147,10 +132,10 @@ function App() {
   }
 
   function FetchData(stop) {
-    console.log("Fetching data!");
     fetch("http://api.511.org/transit/StopMonitoring?api_key=" + key + "&agency=SF&format=json&stopcode=" + stop.value)
       .then(res => res.json())
       .then(res => { setArrivals(createArrivals(res)) })
+      .then(setUpdateTime(Date.now()))
       .catch(error => console.log(error.message));
   }
 
@@ -175,7 +160,7 @@ function App() {
         <span className='bold'> {props.station}</span>.
         Last updated at {toTimeStr(props.lastUpdateTime)}.
       </p>
-      <button className='refresh' onClick={() => { setUpdateTime(Date.now()); FetchData(stop); }}><RefreshIcon></RefreshIcon></button>
+      <button className='refresh' onClick={() => { FetchData(stop); }}><RefreshIcon></RefreshIcon></button>
     </div>
   }
 
@@ -184,7 +169,6 @@ function App() {
     switch (actionMeta.action) {
       case 'select-option':
       case 'set-value':
-        setUpdateTime(Date.now());
         setStop(valueMeta);
         FetchData(valueMeta);
         break;
@@ -233,9 +217,8 @@ function App() {
     return <Marker position={props.stop.location} icon={new Icon({ iconUrl: markerIconPng })}>
       <Popup>
         {props.stop.label} <br />
-        <button onClick={
+        <button style={{ textDecoration: 'underline' }} onClick={
           () => {
-            setUpdateTime(Date.now());
             setStop(props.stop);
             FetchData(props.stop);
           }
@@ -258,8 +241,7 @@ function App() {
       <header>
         <HeaderRow station={stop.label} lastUpdateTime={lastUpdateTime}></HeaderRow>
 
-        <StopSelector></StopSelector>
-        {/* <MapContainer center={[37.7749, -122.4194]} zoom={14} scrollWheelZoom={false} style={{ height: '500px' }}>
+        <MapContainer className="Map" center={[37.7749, -122.4194]} zoom={14} scrollWheelZoom={false}>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -267,8 +249,10 @@ function App() {
           <div>
             <MarkersFromStops stops={stops}></MarkersFromStops>
           </div>
+        </MapContainer>
 
-        </MapContainer> */}
+        <StopSelector></StopSelector>
+
         <Filtering></Filtering>
         <Arrivals liProps={arrivalList.filter(x => !filteredLines.includes(x.lineCode)).slice(0, MAX_ARRIVALS)}></Arrivals>
 
