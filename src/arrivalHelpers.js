@@ -1,4 +1,3 @@
-import { StayPrimaryLandscape } from '@mui/icons-material';
 import './App.css';
 
 function style(backgroundColor, textColor = 'white') {
@@ -107,3 +106,31 @@ export function iconStyle(lineCode) {
     }
 }
 
+export function filterLineIconStyle(filteredLines, lineCode) {
+    if (filteredLines && !filteredLines.includes(lineCode)) {
+      return iconStyle(lineCode);
+    }
+    else {
+      return { 'backgroundColor': 'gray', 'color': 'lightgray' };
+    }
+}
+
+export function filterDirectionIconStyle(filteredDirections, dirCode) {
+    if (filteredDirections && !filteredDirections.includes(dirCode)) {
+        return {'backgroundColor': 'black', 'color': 'white'};
+    }
+    else {
+        return { 'backgroundColor': 'gray', 'color': 'lightgray' };
+    }
+}
+
+export function dirExpand(dir){
+    switch (dir){
+        case 'N': return 'North';
+        case 'S': return 'South';
+        case 'E': return 'East';
+        case 'W': return 'West';
+        default: return dir;
+    }
+
+}

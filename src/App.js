@@ -1,20 +1,16 @@
 import './App.css';
 import bart from './img/bart.svg'
-import { lineCodeShorten, iconStyle, longDirection } from './arrivalHelpers';
-import React, { Component, useState, useEffect } from 'react'
-import Select, { InputActionMeta } from 'react-select'
-import opts from './options.json'
+import { lineCodeShorten, iconStyle, longDirection, filterLineIconStyle, filterDirectionIconStyle, dirExpand} from './arrivalHelpers';
+import React, { useState, useEffect } from 'react'
+import Select from 'react-select'
 import RefreshIcon from '@mui/icons-material/Refresh';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 import Map from './Map.js'
 import InfoDialog from './Info';
-
-import { JoinLeft, LocalConvenienceStoreOutlined } from '@mui/icons-material';
-import { FormControlUnstyledContext } from '@mui/base';
+import { filterOnClick, Filtering } from './Filtering';
 
 const key = "80b27b9e-f65e-4c32-960a-a40a076561ba"
-const REFRESH_TIME = 120000; // 2 mins  
+const REFRESH_TIME = 1200000; // 20 mins  
 const MAX_ARRIVALS = 100;
 
 const agency = 'BA';
@@ -78,7 +74,7 @@ function createArrivals(data) {
     .map(j => Object({
       lineCode: lineCodeShorten(agency, j.LineRef),
       lineName: j.PublishedLineName,
-      direction: j.DirectionRef,
+      direction: dirExpand(j.DirectionRef),
       destination: j.DestinationName,
       mins: computeMins(getExpectedTime(j))
     }))
@@ -115,6 +111,7 @@ function App() {
   const [lastUpdateTime, setUpdateTime] = useState(null);
   const [arrivalList, setArrivals] = useState([]);
   const [filteredLines, setFilteredLines] = useState([]);
+  const [filteredDirections, setFilteredDirections] = useState([]);
   const [stops, setStops] = useState([]);
   const [mapCenter, setMapCenter] = useState([37.77, -122.356]);
   const [mapZoom, setMapZoom] = useState(11);
@@ -190,39 +187,54 @@ function App() {
     <Select id="StopSelector" options={stops} onChange={onChange} />
   );
 
-  function filterIconStyle(lineCode) {
-    if (!filteredLines.includes(lineCode)) {
-      return iconStyle(lineCode);
+  // function FilteringLines() {
+  //   if (stop) {
+  //   var lineCodes = [...new Set(arrivalList.map(x => x.lineCode))];
+  //   lineCodes.sort();
+  //     return <div className='Filtering'>
+  //       <p style={{marginRight: '0.75rem'}}>Filter: </p>
+  //       {
+  //         lineCodes.map((x) => {
+  //           return <i style={filterLineIconStyle(filteredLines, x)} className='lineIconFilter' onClick={() => filterOnClick(filteredLines, setFilteredLines, x)}>{x}</i>;
+  //         }
+  //         )
+  //       }
+  //     </div >
+  //   }
+  //   else return <div></div>
+  // }
+
+  // function FilteringDirections() {
+  //   var directions = [...new Set(arrivalList.map(x => x.direction))];
+  //   directions.sort();
+  //   return <div className='Filtering'>
+  //     {
+  //       directions.map((x) => {
+  //         return <i style={filterDirectionIconStyle(filteredDirections, x)} className='directionIconFilter' onClick={() => filterOnClick(filteredDirections, setFilteredDirections, x)}>{dirExpand(x)}</i>;
+  //       }
+  //       )
+  //     }
+  //   </div>
+
+  // }
+
+  function FilterLinesAndDir() {
+    if (stop) {
+      return <div className='FilterLinesAndDir'>
+        <div className='Filtering'>
+          <p style={{marginRight: '0.75rem'}}>Lines:</p>
+          <Filtering arrivalList={arrivalList} attrSelector={x => x.lineCode} iconStyle='lineIconFilter' filterIconStyle={filterLineIconStyle} filteredAttrs={filteredLines} setFilteredAttrs={setFilteredLines}></Filtering>
+        </div>
+        <div style={{}} className='Filtering'>
+          <p style={{marginRight: '0.75rem'}}>Directions:</p>
+          <Filtering arrivalList={arrivalList} attrSelector={x=>x.direction} iconStyle='directionIconFilter' filterIconStyle={filterDirectionIconStyle} filteredAttrs={filteredDirections} setFilteredAttrs={setFilteredDirections}></Filtering>
+        </div>
+      </div>
     }
     else {
-      return { 'backgroundColor': 'gray', 'color': 'lightgray' };
+      return <div></div>
     }
   }
-
-  function filterLineClick(lineCode) {
-    if (!filteredLines.includes(lineCode)) {
-      setFilteredLines(filteredLines.concat([lineCode]));
-    }
-    else {
-      setFilteredLines(filteredLines.filter((v, _) => v !== lineCode));
-    }
-  }
-
-  function Filtering() {
-    var lineCodes = [...new Set(arrivalList.map(x => x.lineCode))];
-    if (stop)
-      return <div className='Filtering'>
-        <p>Filter:</p>
-        {
-          lineCodes.map((x) => {
-            return <i style={filterIconStyle(x)} className='lineIconFilter' onClick={() => filterLineClick(x)}>{x}</i>;
-          }
-          )
-        }
-      </div >
-    else return <div></div>
-  }
-
 
 
   return (
@@ -242,14 +254,14 @@ function App() {
         <Map center={mapCenter} zoom={mapZoom} stops={stops} FetchData={FetchData}></Map>
         <StopSelector></StopSelector>
 
-        <Filtering></Filtering>
-        <Arrivals liProps={arrivalList.filter(x => !filteredLines.includes(x.lineCode)).slice(0, MAX_ARRIVALS)}></Arrivals>
+        <FilterLinesAndDir></FilterLinesAndDir>
+
+        <Arrivals liProps={arrivalList.filter(x => !filteredLines.includes(x.lineCode) && !filteredDirections.includes(x.direction)).slice(0, MAX_ARRIVALS)}></Arrivals>
 
       </header>
     </div >
   );
 }
-
 
 
 export default App;
