@@ -81,7 +81,7 @@ function getBARTStopsLocations(key, parsed_stop_data, setStops)
 {
     var stops = [];
     for (const curr_stop of parsed_stop_data) {
-      fetch(`http://api.bart.gov/api/stn.aspx?cmd=stninfo&key=${key}&orig=${curr_stop.value}&json=y`)
+      fetch(`https://api.bart.gov/api/stn.aspx?cmd=stninfo&key=${key}&orig=${curr_stop.value}&json=y`)
         .then(res => res.json())
         .then(res => res.root.stations.station)
         .then(x => { curr_stop.location = [parseFloat(x.gtfs_latitude), parseFloat(x.gtfs_longitude)]; stops = stops.concat([curr_stop]); setStops(stops) })
