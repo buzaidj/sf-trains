@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { filterLineIconStyle, filterDirectionIconStyle} from './arrivalHelpers';
+import './App.css';
 
 
 /**
@@ -13,7 +15,7 @@ import React, { useState } from 'react'
  * @param {Array[string] => ()} setFilteredAttrs React hook function to set filtered attributes
  * @param {string} attrClicked The attribute that was clicked
  */
-export function filterOnClick(filteredAttrs, setFilteredAttrs, attrClicked) {
+function filterOnClick(filteredAttrs, setFilteredAttrs, attrClicked) {
     if (!filteredAttrs.includes(attrClicked)) {
         // attrClicked is not the filtered attrs, add it 
         setFilteredAttrs(filteredAttrs.concat([attrClicked]));
@@ -25,24 +27,26 @@ export function filterOnClick(filteredAttrs, setFilteredAttrs, attrClicked) {
 }
 
 
-export function Filtering({arrivalList, attrSelector, iconStyle, filterIconStyle, filteredAttrs, setFilteredAttrs}) {    
+function Filtering({arrivalList, attrSelector, iconStyle, filterIconStyle, filteredAttrs, setFilteredAttrs}) {    
     var attrs = [...new Set(arrivalList.map(attrSelector))];
     attrs.sort();
     return <div>{attrs.map((attr) => { return <i style={filterIconStyle(filteredAttrs, attr)} className={iconStyle} onClick={() => filterOnClick(filteredAttrs, setFilteredAttrs, attr)}>{attr}</i> })}</div>
 }
 
-
-//   function FilteringOld() {
-//     var lineCodes = [...new Set(arrivalList.map(x => x.lineCode))];
-//     if (stop)
-//       return <div className='Filtering'>
-//         <p>Filter:</p>
-//         {
-//           lineCodes.map((x) => {
-//             return <i style={filterIconStyle(x)} className='lineIconFilter' onClick={() => filterOnClick(filteredLines, setFilteredLines, x)}>{x}</i>;
-//           }
-//           )
-//         }
-//       </div >
-//     else return <div></div>
-//   }
+export function FilterLinesAndDir({arrivalList, filteredLines, filteredDirections, setFilteredLines, setFilteredDirections, stop}) {
+    if (stop) {
+      return <div className='FilterLinesAndDir'>
+        <div className='Filtering'>
+          <p style={{marginRight: '0.75rem'}}>Lines:</p>
+          <Filtering arrivalList={arrivalList} attrSelector={x => x.lineCode} iconStyle='lineIconFilter' filterIconStyle={filterLineIconStyle} filteredAttrs={filteredLines} setFilteredAttrs={setFilteredLines}></Filtering>
+        </div>
+        <div style={{}} className='Filtering'>
+          <p style={{marginRight: '0.75rem'}}>Directions:</p>
+          <Filtering arrivalList={arrivalList} attrSelector={x=>x.direction} iconStyle='directionIconFilter' filterIconStyle={filterDirectionIconStyle} filteredAttrs={filteredDirections} setFilteredAttrs={setFilteredDirections}></Filtering>
+        </div>
+      </div>
+    }
+    else {
+      return <div></div>
+    }
+  }

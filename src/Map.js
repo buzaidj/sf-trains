@@ -35,7 +35,7 @@ function MarkersFromStops(props) {
 }
 
 
-function Map({ center, zoom, stops, FetchData }) {
+function Map({ center, zoom, stops, fetchArrivals }) {
     return (
         <MapContainer className="Map" center={center} zoom={zoom} scrollWheelZoom={false}>
             <ChangeViewMap center={center} zoom={zoom} />
@@ -44,7 +44,7 @@ function Map({ center, zoom, stops, FetchData }) {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <div>
-                <MarkersFromStops stops={stops} FetchData={FetchData}></MarkersFromStops>
+                <MarkersFromStops stops={stops} FetchData={fetchArrivals}></MarkersFromStops>
             </div>
         </MapContainer>
     )

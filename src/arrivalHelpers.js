@@ -7,6 +7,11 @@ function style(backgroundColor, textColor = 'white') {
     }
 }
 
+export function capitalize(s) {
+    const lower = s.toLowerCase();
+    return s.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 function bartShorten(lineCode) {
     return lineCode.split('-')[0]
 }
@@ -40,6 +45,12 @@ export function lineCodeShorten(agency, lineCode) {
     }
 }
 
+export function toTitleCase(str) {
+    if (!str) return '';
+    return str.toLowerCase().replace(/(?:^|[\s-/])\w/g, function (match) {
+      return match.toUpperCase();
+    });
+  }  
 
 /** styling icons  */
 export function iconStyle(lineCode) {
@@ -124,7 +135,7 @@ export function filterDirectionIconStyle(filteredDirections, dirCode) {
     }
 }
 
-export function dirExpand(dir){
+export function directionExpand(dir){
     switch (dir){
         case 'N': return 'North';
         case 'S': return 'South';

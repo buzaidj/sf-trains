@@ -1,13 +1,15 @@
 import './App.css';
-import bart from './img/bart.svg'
-import { lineCodeShorten, iconStyle, longDirection, filterLineIconStyle, filterDirectionIconStyle, dirExpand} from './arrivalHelpers';
+import bart from './img/bart.jpg'
+import { iconStyle, longDirection, filterLineIconStyle, filterDirectionIconStyle, directionExpand} from './arrivalHelpers';
 import React, { useState, useEffect } from 'react'
 import Select from 'react-select'
 import RefreshIcon from '@mui/icons-material/Refresh';
 
+import { fetch511Arrivals, fetch511Stops, fetchBARTArrivals, fetchBARTStops} from './DataRetrieval';
+
 import Map from './Map.js'
 import InfoDialog from './Info';
-import { filterOnClick, Filtering } from './Filtering';
+import { FilterLinesAndDir } from './Filtering';
 
 const key = "80b27b9e-f65e-4c32-960a-a40a076561ba"
 const REFRESH_TIME = 1200000; // 20 mins  
@@ -15,29 +17,29 @@ const MAX_ARRIVALS = 100;
 
 const agency = 'BA';
 
-function toTitleCase(str) {
-  if (!str) return '';
-  return str.toLowerCase().replace(/(?:^|[\s-/])\w/g, function (match) {
-    return match.toUpperCase();
-  });
-}
+const bart_key = 'QBPD-5Q5V-9L3T-DWEI';
+
 
 /** A list of all arriving buses/trains */
-function Arrivals(props) {
-  return <ul className='Arrivals'>{props.liProps.map(
+function Arrivals({arrivals}) {
+  return <ul className='Arrivals'>{arrivals.map(
     (prop) => <li>{ArrivalRow(prop)}</li>
   )}</ul>
 }
 
+function Mins({mins}) {
+  switch (mins) {
+    case "Leaving":
+      return <p className='mins'>Leaving <span className='arrivingNow'>now</span></p>;
 
-function Mins(props) {
-  switch (props.mins) {
     case 0:
+    case "0":
       return <p className='mins'>Arriving <span className='arrivingNow'>now</span></p>;
     case 1:
-      return <p className='mins'><span className='minsNum'>{props.mins}</span> min away</p>;
+    case "1":
+      return <p className='mins'><span className='minsNum'>{mins}</span> min away</p>;
     default:
-      return <p className='mins'><span className='minsNum'>{props.mins}</span> mins away</p>;
+      return <p className='mins'><span className='minsNum'>{mins}</span> mins away</p>;
   }
 }
 
@@ -49,59 +51,10 @@ function ArrivalRow(props) {
   return <div className='ArrivalRow'>
     <Mins mins={props.mins}></Mins>
     <i style={iconStyle(props.lineCode)} className='lineIcon'>{props.lineCode}</i>
-    <p className='lineName'>{toTitleCase(props.lineName)}</p>
+    <p className='lineName'>{props.lineName}</p>
     <p className='direction'>{longDirection(props.direction)}</p>
   </div>;
 }
-
-function computeMins(expectedArrivalTime) {
-  return Math.floor(Math.abs((Date.parse(expectedArrivalTime) - Date.now()) / 1000 / 60));
-}
-
-function getExpectedTime(j) {
-  for (const time of [j.MonitoredCall.ExpectedDepartureTime, j.MonitoredCall.ExpectedArrivalTime]) {
-    if (time) {
-      return time;
-    }
-  }
-  return null;
-}
-
-
-function createArrivals(data) {
-  return data?.ServiceDelivery.StopMonitoringDelivery.MonitoredStopVisit
-    .map(x => x.MonitoredVehicleJourney)
-    .map(j => Object({
-      lineCode: lineCodeShorten(agency, j.LineRef),
-      lineName: j.PublishedLineName,
-      direction: dirExpand(j.DirectionRef),
-      destination: j.DestinationName,
-      mins: computeMins(getExpectedTime(j))
-    }))
-}
-
-function createStops(data) {
-  return data?.Siri.ServiceDelivery.DataObjectDelivery.dataObjects.SiteFrame.stopPlaces.StopPlace
-    .map(x => Object({
-      value: x['@id'],
-      label: x.Name,
-      location: [parseFloat(x.Centroid.Location.Latitude), parseFloat(x.Centroid.Location.Longitude)],
-      url: x.Url,
-      mode: x.TransportMode
-    }))
-    .filter(x => {
-      switch (agency) {
-        case 'SF':
-          return x.mode !== 'bus' && x.mode !== 'tram';
-        case 'BA':
-          return x.mode !== 'unknown' && x.value.substring(0, 6) !== 'place_';
-        default:
-          return x
-      }
-    }
-    )
-}
-
 
 function toTimeStr(date) { return new Date(date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) }
 
@@ -116,31 +69,19 @@ function App() {
   const [mapCenter, setMapCenter] = useState([37.77, -122.356]);
   const [mapZoom, setMapZoom] = useState(11);
 
-  function FetchStops() {
-    fetch(`http://api.511.org/transit/stopplaces?api_key=${key}&operator_id=${agency}&format=json`)
-      .then(res => res.json())
-      .then(res => { setStops(createStops(res)) })
-      .catch(error => console.log(error.message));
-  }
 
-  function FetchData(stop) {
-    if (stop)
-      fetch("http://api.511.org/transit/StopMonitoring?api_key=" + key + "&agency=" + agency + "&format=json&stopcode=" + stop.value)
-        .then(res => res.json())
-        .then(res => { setArrivals(createArrivals(res)) })
-        .then(() => setUpdateTime(Date.now()))
-        .then(() => setStop(stop))
-        // .then(() => setMapCenter(mapCenter))
-        .catch(error => console.log(error.message));
-  }
+  function fetchArrivals(stop) { fetchBARTArrivals(bart_key, stop, setArrivals, setUpdateTime, setStop); }
+  function fetchStops() {fetchBARTStops(bart_key, setStops)}
+
+  // function fetchArrivals(stop) { fetch511Arrivals(key, stop, setArrivals, setUpdateTime, setStop); }
+  // function fetchStops() {fetch511Stops(key, setStops)}
 
   useEffect(() => {
-    FetchData(stop);
-    FetchStops();
-
+    fetchArrivals(stop);
+    fetchStops();
     const interval = setInterval(() => {
       setUpdateTime(Date.now());
-      FetchData(stop);
+      fetchArrivals(stop);
     }, REFRESH_TIME);
 
     return () => clearInterval(interval);
@@ -159,22 +100,21 @@ function App() {
 
   function HeaderRow(props) {
     return <div className='Header'>
-      <img src={bart} className="BART" alt="BART Logo" />
       <UpcomingHeaderRow stop={props.stop}></UpcomingHeaderRow>
       <div className='refresh'>
         <InfoDialog></InfoDialog>
         {/* <button className='buttonHeader' onClick={() => { FetchData(stop); }}><InfoOutlinedIcon></InfoOutlinedIcon></button> */}
-        <button className='buttonHeader' onMouseOver={() => { FetchData(stop); }}><RefreshIcon></RefreshIcon></button>
+        <button className='buttonHeader' onMouseOver={() => { fetchArrivals(stop); }}><RefreshIcon></RefreshIcon></button>
       </div>
     </div>
   }
 
   /** When dropdown menu input changes */
-  function onChange(valueMeta, actionMeta) {
+  function onChange(stop, actionMeta) {
     switch (actionMeta.action) {
       case 'select-option':
-        FetchData(valueMeta);
-        setMapCenter(valueMeta.location);
+        fetchArrivals(stop);
+        setMapCenter(stop.location);
         setMapZoom(12);
         break;
       default:
@@ -183,63 +123,10 @@ function App() {
   }
 
 
-  const StopSelector = () => (
-    <Select id="StopSelector" options={stops} onChange={onChange} />
-  );
-
-  // function FilteringLines() {
-  //   if (stop) {
-  //   var lineCodes = [...new Set(arrivalList.map(x => x.lineCode))];
-  //   lineCodes.sort();
-  //     return <div className='Filtering'>
-  //       <p style={{marginRight: '0.75rem'}}>Filter: </p>
-  //       {
-  //         lineCodes.map((x) => {
-  //           return <i style={filterLineIconStyle(filteredLines, x)} className='lineIconFilter' onClick={() => filterOnClick(filteredLines, setFilteredLines, x)}>{x}</i>;
-  //         }
-  //         )
-  //       }
-  //     </div >
-  //   }
-  //   else return <div></div>
-  // }
-
-  // function FilteringDirections() {
-  //   var directions = [...new Set(arrivalList.map(x => x.direction))];
-  //   directions.sort();
-  //   return <div className='Filtering'>
-  //     {
-  //       directions.map((x) => {
-  //         return <i style={filterDirectionIconStyle(filteredDirections, x)} className='directionIconFilter' onClick={() => filterOnClick(filteredDirections, setFilteredDirections, x)}>{dirExpand(x)}</i>;
-  //       }
-  //       )
-  //     }
-  //   </div>
-
-  // }
-
-  function FilterLinesAndDir() {
-    if (stop) {
-      return <div className='FilterLinesAndDir'>
-        <div className='Filtering'>
-          <p style={{marginRight: '0.75rem'}}>Lines:</p>
-          <Filtering arrivalList={arrivalList} attrSelector={x => x.lineCode} iconStyle='lineIconFilter' filterIconStyle={filterLineIconStyle} filteredAttrs={filteredLines} setFilteredAttrs={setFilteredLines}></Filtering>
-        </div>
-        <div style={{}} className='Filtering'>
-          <p style={{marginRight: '0.75rem'}}>Directions:</p>
-          <Filtering arrivalList={arrivalList} attrSelector={x=>x.direction} iconStyle='directionIconFilter' filterIconStyle={filterDirectionIconStyle} filteredAttrs={filteredDirections} setFilteredAttrs={setFilteredDirections}></Filtering>
-        </div>
-      </div>
-    }
-    else {
-      return <div></div>
-    }
-  }
-
-
   return (
     <div id="app">
       <header>
+        <p style={{fontSize: '24px', fontWeight: 'bold', margin: 0, padding: 0}}>BART Arrivals 🚊 🌃</p>
         <HeaderRow stop={stop} lastUpdateTime={lastUpdateTime}></HeaderRow>
         {/* <MapContainer className="Map" center={mapCenter} zoom={mapZoom} scrollWheelZoom={false}>
           <TileLayer
@@ -251,12 +138,12 @@ function App() {
           </div>
         </MapContainer> */}
 
-        <Map center={mapCenter} zoom={mapZoom} stops={stops} FetchData={FetchData}></Map>
-        <StopSelector></StopSelector>
+        <Map center={mapCenter} zoom={mapZoom} stops={stops} fetchArrivals={fetchArrivals}></Map>
+        <Select id="StopSelector" options={stops} onChange={onChange} />
 
-        <FilterLinesAndDir></FilterLinesAndDir>
+        <FilterLinesAndDir arrivalList={arrivalList} filteredLines={filteredLines} filteredDirections={filteredDirections} setFilteredLines={setFilteredLines} setFilteredDirections={setFilteredDirections} stop={stop}></FilterLinesAndDir>
 
-        <Arrivals liProps={arrivalList.filter(x => !filteredLines.includes(x.lineCode) && !filteredDirections.includes(x.direction)).slice(0, MAX_ARRIVALS)}></Arrivals>
+        <Arrivals arrivals={arrivalList.filter(x => !filteredLines.includes(x.lineCode) && !filteredDirections.includes(x.direction)).slice(0, MAX_ARRIVALS)}></Arrivals>
 
       </header>
     </div >
