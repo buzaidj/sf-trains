@@ -3,7 +3,6 @@ import { lineCodeShorten, directionExpand, capitalize } from "./arrivalHelpers";
 
 const agency = 'BA';
 
-
 function parse511Stops(data) {
     return data?.Siri.ServiceDelivery.DataObjectDelivery.dataObjects.SiteFrame.stopPlaces.StopPlace
     .map(x => Object({
@@ -91,7 +90,13 @@ function getBARTStopsLocations(key, parsed_stop_data, setStops)
 }
 
 export function fetchBARTStops(key, setStops) {
-    fetch(`http://api.bart.gov/api/stn.aspx?cmd=stns&json=y&key=${key}`)
+    fetch(
+        `https://api.bart.gov/api/stn.aspx?cmd=stns&json=y&key=${key}`
+        // ,
+        // {
+        //     headers: { 'Access-Control-Allow-Origin': '*'}
+        // }
+    )
         .then(res => res.json())
         .then(res => parseBARTStops(res))
         .then(parsed => getBARTStopsLocations(key, parsed, setStops))
@@ -120,7 +125,12 @@ function parseBARTArrivals(data){
 
 export function fetchBARTArrivals(key, stop, setArrivals, setUpdateTime, setStop) {
     if (stop)
-      fetch(`http://api.bart.gov/api/etd.aspx?cmd=etd&key=${ key }&orig=${ stop.value }&json=y`)
+      fetch(`https://api.bart.gov/api/etd.aspx?cmd=etd&key=${ key }&orig=${ stop.value }&json=y`
+        // ,
+        // {
+        //     headers: { 'Access-Control-Allow-Origin': '*'}
+        // }
+        )
           .then(res => res.json())
           .then(res => { 
               setArrivals(parseBARTArrivals(res)); 
